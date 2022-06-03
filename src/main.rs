@@ -1,40 +1,30 @@
+extern crate log;
 extern crate tar;
 
+mod args;
+mod db;
+mod logger;
 mod package;
 
 use std::fs;
-use std::fs::File;
 use std::io::prelude::*;
-use std::io::BufReader;
 use std::path::PathBuf;
 
+use args::Args;
 use package::Package;
 
-use flate2::read::GzDecoder;
-use tar::{Archive, EntryType};
 use globset::{Glob, GlobSetBuilder};
-
-fn open_databse(working_dir: &PathBuf, db_name: &str) -> Result<Archive<GzDecoder<BufReader<File>>>, std::io::Error> {
-    let db_path: PathBuf = working_dir.join(format!("{}.db.tar.gz", db_name));
-
-    // Open file
-    let db = File::open(db_path)?;
-
-    // Read file
-    let buff = BufReader::new(db);
-
-    // Decompress file
-    let tar = GzDecoder::new(buff);
-
-    // Open archive
-    Ok(Archive::new(tar))
-}
+use tar::EntryType;
 
 fn main() -> Result<(), std::process::ExitCode> {
-    let db_name: String = String::from("cactus");
+    let args = Args::parse();
+
     let db_dir: Option<PathBuf> = None;
 
-    pretty_env_logger::init();
+    logger::init().map_err(|e| {
+        eprintln!("Couldn't load logger: {}.", e.to_string());
+        std::process::ExitCode::FAILURE
+    })?;
 
     let working_dir = match db_dir {
         Some(dir) => dir,
@@ -43,9 +33,9 @@ fn main() -> Result<(), std::process::ExitCode> {
             std::process::ExitCode::FAILURE
         })?,
     };
-    
+
     // Open archive
-    let mut a = open_databse(&working_dir, &db_name).map_err(|e| {
+    let mut a = db::open(&working_dir, &args.db_name).map_err(|e| {
         log::error!("Couldn't open database: {}.", e.to_string());
         std::process::ExitCode::FAILURE
     })?;
@@ -60,7 +50,7 @@ fn main() -> Result<(), std::process::ExitCode> {
     let mut pattern: GlobSetBuilder = GlobSetBuilder::new();
 
     // Filter for database
-    let db_pattern = Glob::new(&format!("*{}.{}*", db_name, "{db,files}")).map_err(|e| {
+    let db_pattern = Glob::new(&format!("*{}.{}*", args.db_name, "{db,files}")).map_err(|e| {
         log::error!("Glob: {}.", e.to_string());
         std::process::ExitCode::FAILURE
     })?;
@@ -105,8 +95,7 @@ fn main() -> Result<(), std::process::ExitCode> {
         })?
         .filter_map(|v| v.ok())
         .map(|v| v.path())
-        .filter(|v| !pattern.is_match(v))
-        .collect::<Vec<_>>();
+        .filter(|v| !pattern.is_match(v));
 
     for path in paths_del {
         if let Err(e) = std::fs::remove_file(path) {
