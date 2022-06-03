@@ -1,6 +1,7 @@
 #[derive(Default)]
 pub struct Package {
     pub filename: String,
+    pub name: String,
 }
 
 impl Package {
@@ -19,6 +20,9 @@ impl Package {
                 match section {
                     Some("%FILENAME%") => {
                         pkg.filename = line.to_string();
+                    }
+                    Some("%NAME%") => {
+                        pkg.name = line.to_string();
                     }
                     _ => {}
                 }

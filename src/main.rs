@@ -15,23 +15,23 @@ use tar::{Archive, EntryType};
 
 fn main() -> Result<(), std::process::ExitCode> {
     let db_name: String = String::from("cactus");
-    let db_dir: Option<PathBuf> = Some(PathBuf::from("/tmp/tmp.avLFTk0K8p")); 
-    
+    let db_dir: Option<PathBuf> = None;
+
     pretty_env_logger::init();
 
     let working_dir = match db_dir {
         Some(dir) => dir,
         None => std::env::current_dir().map_err(|e| {
-            log::error!("Error getting current directory: {}.", e.to_string());
+            log::error!("Couldn't get current directory: {}.", e.to_string());
             std::process::ExitCode::FAILURE
-        })?
+        })?,
     };
 
     let db_path: PathBuf = working_dir.join(format!("{}.db.tar.gz", db_name));
 
     // Open file
     let db = File::open(db_path).map_err(|e| {
-        log::error!("Error reading database: {}.", e.to_string());
+        log::error!("Couldn't open database: {}.", e.to_string());
         std::process::ExitCode::FAILURE
     })?;
 
@@ -46,10 +46,10 @@ fn main() -> Result<(), std::process::ExitCode> {
 
     // List entries
     let entries = a.entries().map_err(|e| {
-        log::error!("Error reading database: {}.", e.to_string());
+        log::error!("Couldn't read entries in database: {}.", e.to_string());
         std::process::ExitCode::FAILURE
     })?;
-    
+
     let mut paths_keep = vec![
         working_dir.join(format!("{}.db", db_name)),
         working_dir.join(format!("{}.files", db_name)),
@@ -62,7 +62,7 @@ fn main() -> Result<(), std::process::ExitCode> {
         working_dir.join(format!("{}.db.tar.gz.old", db_name)),
         working_dir.join(format!("{}.files.tar.gz.old", db_name)),
         working_dir.join(format!("{}.db.tar.gz.old.sig", db_name)),
-        working_dir.join(format!("{}.files.tar.gz.old.sig", db_name))
+        working_dir.join(format!("{}.files.tar.gz.old.sig", db_name)),
     ];
 
     for file in entries {
@@ -74,23 +74,23 @@ fn main() -> Result<(), std::process::ExitCode> {
             continue;
         }
 
-        let mut s = String::new();
-        file.read_to_string(&mut s).unwrap();
+        let mut desc = String::new();
+        file.read_to_string(&mut desc).unwrap();
 
-        let pkg = Package::from_str(&s);
-        
-        if pk.filename.is_empty() {
+        let pkg = Package::from_str(&desc);
+
+        if pkg.filename.is_empty() {
             log::warn!("An entry in the database seems invalid.");
         } else {
+            log::info!("A package named {} has been found.", pkg.name);
             paths_keep.push(working_dir.join(format!("{}", pkg.filename)));
             paths_keep.push(working_dir.join(format!("{}.sig", pkg.filename)));
         }
     }
-    
-    
+
     let paths_del = fs::read_dir(working_dir)
         .map_err(|e| {
-            log::error!("Error while reading directory: {}.", e.to_string());
+            log::error!("Couldn't read working directory: {}.", e.to_string());
             std::process::ExitCode::FAILURE
         })?
         .filter_map(|v| v.ok())
@@ -100,11 +100,9 @@ fn main() -> Result<(), std::process::ExitCode> {
 
     for path in paths_del {
         if let Err(e) = std::fs::remove_file(path) {
-             log::warn!("Error removing a file: {}.", e.to_string());
+            log::warn!("Couldn't remove a file: {}.", e.to_string());
         }
     }
-    
-    log::info!("Hello");
 
     Ok(())
 }
