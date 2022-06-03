@@ -57,8 +57,10 @@ fn main() -> Result<(), std::process::ExitCode> {
     pattern.add(db_pattern);
 
     for file in entries {
-        // Make sure there wasn't an I/O error
-        let mut file = file.unwrap();
+        let mut file = file.map_err(|e| {
+            log::error!("Couldn't open package description: {}.", e.to_string());
+            std::process::ExitCode::FAILURE
+        })?;
 
         let header = file.header();
         if header.entry_type() != EntryType::Regular {
@@ -66,7 +68,10 @@ fn main() -> Result<(), std::process::ExitCode> {
         }
 
         let mut desc = String::new();
-        file.read_to_string(&mut desc).unwrap();
+        file.read_to_string(&mut desc).map_err(|e| {
+            log::error!("Couldn't read a package description: {}.", e.to_string());
+            std::process::ExitCode::FAILURE
+        })?;
 
         let pkg = Package::from_str(&desc);
 
