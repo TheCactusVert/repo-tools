@@ -12,21 +12,9 @@ use package::Package;
 
 use flate2::read::GzDecoder;
 use tar::{Archive, EntryType};
+use globset::{Glob, GlobSetBuilder};
 
-fn main() -> Result<(), std::process::ExitCode> {
-    let db_name: String = String::from("cactus");
-    let db_dir: Option<PathBuf> = None;
-
-    pretty_env_logger::init();
-
-    let working_dir = match db_dir {
-        Some(dir) => dir,
-        None => std::env::current_dir().map_err(|e| {
-            log::error!("Couldn't get current directory: {}.", e.to_string());
-            std::process::ExitCode::FAILURE
-        })?,
-    };
-
+fn open_databse(working_dir: &PathBuf, db_name: &str) -> Result<Archive<GzDecoder<BufReader<File>>>, std::process::ExitCode> {
     let db_path: PathBuf = working_dir.join(format!("{}.db.tar.gz", db_name));
 
     // Open file
@@ -42,7 +30,25 @@ fn main() -> Result<(), std::process::ExitCode> {
     let tar = GzDecoder::new(buff);
 
     // Open archive
-    let mut a = Archive::new(tar);
+    Ok(Archive::new(tar))
+}
+
+fn main() -> Result<(), std::process::ExitCode> {
+    let db_name: String = String::from("cactus");
+    let db_dir: Option<PathBuf> = None;
+
+    pretty_env_logger::init();
+
+    let working_dir = match db_dir {
+        Some(dir) => dir,
+        None => std::env::current_dir().map_err(|e| {
+            log::error!("Couldn't get current directory: {}.", e.to_string());
+            std::process::ExitCode::FAILURE
+        })?,
+    };
+    
+    // Open archive
+    let mut a = open_databse(&working_dir, &db_name)?;
 
     // List entries
     let entries = a.entries().map_err(|e| {
@@ -50,20 +56,15 @@ fn main() -> Result<(), std::process::ExitCode> {
         std::process::ExitCode::FAILURE
     })?;
 
-    let mut paths_keep = vec![
-        working_dir.join(format!("{}.db", db_name)),
-        working_dir.join(format!("{}.files", db_name)),
-        working_dir.join(format!("{}.db.sig", db_name)),
-        working_dir.join(format!("{}.files.sig", db_name)),
-        working_dir.join(format!("{}.db.tar.gz", db_name)),
-        working_dir.join(format!("{}.files.tar.gz", db_name)),
-        working_dir.join(format!("{}.db.tar.gz.sig", db_name)),
-        working_dir.join(format!("{}.files.tar.gz.sig", db_name)),
-        working_dir.join(format!("{}.db.tar.gz.old", db_name)),
-        working_dir.join(format!("{}.files.tar.gz.old", db_name)),
-        working_dir.join(format!("{}.db.tar.gz.old.sig", db_name)),
-        working_dir.join(format!("{}.files.tar.gz.old.sig", db_name)),
-    ];
+    // Create filter pattern
+    let mut pattern: GlobSetBuilder = GlobSetBuilder::new();
+
+    // Filter for database
+    let db_pattern = Glob::new(&format!("*{}.{}*", db_name, "{db,files}")).map_err(|e| {
+        log::error!("Glob: {}.", e.to_string());
+        std::process::ExitCode::FAILURE
+    })?;
+    pattern.add(db_pattern);
 
     for file in entries {
         // Make sure there wasn't an I/O error
@@ -83,10 +84,19 @@ fn main() -> Result<(), std::process::ExitCode> {
             log::warn!("An entry in the database seems invalid.");
         } else {
             log::info!("A package named {} has been found.", pkg.name);
-            paths_keep.push(working_dir.join(format!("{}", pkg.filename)));
-            paths_keep.push(working_dir.join(format!("{}.sig", pkg.filename)));
+            // Filter for package
+            let package_pattern = Glob::new(&format!("*{}*", pkg.filename)).map_err(|e| {
+                log::error!("Glob: {}.", e.to_string());
+                std::process::ExitCode::FAILURE
+            })?;
+            pattern.add(package_pattern);
         }
     }
+
+    let pattern = pattern.build().map_err(|e| {
+        log::error!("Glob: {}.", e.to_string());
+        std::process::ExitCode::FAILURE
+    })?;
 
     let paths_del = fs::read_dir(working_dir)
         .map_err(|e| {
@@ -95,7 +105,7 @@ fn main() -> Result<(), std::process::ExitCode> {
         })?
         .filter_map(|v| v.ok())
         .map(|v| v.path())
-        .filter(|v| !paths_keep.contains(v))
+        .filter(|v| !pattern.is_match(v))
         .collect::<Vec<_>>();
 
     for path in paths_del {
