@@ -14,14 +14,11 @@ use flate2::read::GzDecoder;
 use tar::{Archive, EntryType};
 use globset::{Glob, GlobSetBuilder};
 
-fn open_databse(working_dir: &PathBuf, db_name: &str) -> Result<Archive<GzDecoder<BufReader<File>>>, std::process::ExitCode> {
+fn open_databse(working_dir: &PathBuf, db_name: &str) -> Result<Archive<GzDecoder<BufReader<File>>>, std::io::Error> {
     let db_path: PathBuf = working_dir.join(format!("{}.db.tar.gz", db_name));
 
     // Open file
-    let db = File::open(db_path).map_err(|e| {
-        log::error!("Couldn't open database: {}.", e.to_string());
-        std::process::ExitCode::FAILURE
-    })?;
+    let db = File::open(db_path)?;
 
     // Read file
     let buff = BufReader::new(db);
@@ -48,7 +45,10 @@ fn main() -> Result<(), std::process::ExitCode> {
     };
     
     // Open archive
-    let mut a = open_databse(&working_dir, &db_name)?;
+    let mut a = open_databse(&working_dir, &db_name).map_err(|e| {
+        log::error!("Couldn't open database: {}.", e.to_string());
+        std::process::ExitCode::FAILURE
+    })?;
 
     // List entries
     let entries = a.entries().map_err(|e| {
