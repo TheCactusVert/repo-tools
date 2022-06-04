@@ -2,10 +2,11 @@ use std::io::Read;
 
 use crate::args;
 
+use anyhow::Result;
 use flate2::bufread::GzDecoder;
 use openssl::base64;
 
-pub fn execute(args: args::ArgsElephant) -> Result<(), std::process::ExitCode> {
+pub fn execute(args: args::ArgsElephant) -> Result<()> {
     let data: &str = match args.number {
         1 => "H4sIAJVWBU4CA21RMQ7DIBDbeYWrDgQJ7rZ+IA/IB05l69alcx5fc0ASVXUk4jOO\
               7yAAUWtorygwJ4hlMii0YkJKKRKGvsMsiykl1SalvrMD1gUXyXRkGZPx5OPft81K\
@@ -19,17 +20,11 @@ pub fn execute(args: args::ArgsElephant) -> Result<(), std::process::ExitCode> {
               OQFOUm0Wd9pHCi13ONjBpVdqcWx+EdXVX4vXvGv5cgztB9+fJxZ7AAAA", // Elephant 1
     };
 
-    let bytes = base64::decode_block(data).map_err(|e| {
-        log::error!("Couldn't decode data from base64: {}.", e.to_string());
-        std::process::ExitCode::FAILURE
-    })?;
+    let bytes = base64::decode_block(data)?;
 
     let mut elephant = String::new();
     let mut decoder = GzDecoder::new(bytes.as_slice());
-    decoder.read_to_string(&mut elephant).map_err(|e| {
-        log::error!("Couldn't decompress data: {}.", e.to_string());
-        std::process::ExitCode::FAILURE
-    })?;
+    decoder.read_to_string(&mut elephant)?;
     
     println!("{}", elephant);
     

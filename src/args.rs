@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
+use anyhow::{Error, Result};
 use clap::{Arg, command, ArgMatches, Command};
+
+const ERROR_GENERIC: &'static str = "Required arguments were not provided";
 
 pub enum Args {
     Clean(ArgsClean),
@@ -27,7 +30,7 @@ impl Args {
             .get_matches()
     }
 
-    pub fn parse() -> Result<Self, std::process::ExitCode> {
+    pub fn parse() -> Result<Self> {
         let matches = Self::matches();
         
         match matches.subcommand() {
@@ -50,21 +53,12 @@ impl ArgsClean {
             .arg(Arg::new(ArgsClean::ARG_WORK_DIR).long("directory").short('C').required(false).takes_value(true).help("Directory of the database"))
     }
 
-    fn parse(matches: &ArgMatches) -> Result<Self, std::process::ExitCode> {
+    fn parse(matches: &ArgMatches) -> Result<Self> {
         Ok(Self {
-            db_name: match matches.value_of(ArgsClean::ARG_DB_NAME) {
-                Some(db) => db.to_string(),
-                None => {
-                    log::error!("Oops this shouldn't have happened, there is no name to the database.");
-                    return Err(std::process::ExitCode::FAILURE);
-                }
-            },
+            db_name: matches.value_of(ArgsClean::ARG_DB_NAME).ok_or(Error::msg(ERROR_GENERIC))?.to_string(),
             working_dir: match matches.value_of(ArgsClean::ARG_WORK_DIR) {
                 Some(dir) => PathBuf::from(dir),
-                None => std::env::current_dir().map_err(|e| {
-                    log::error!("Couldn't get current directory: {}.", e.to_string());
-                    std::process::ExitCode::FAILURE
-                })?,
+                None => std::env::current_dir()?,
             },
         })
     }
@@ -80,7 +74,7 @@ impl ArgsElephant {
             .arg(Arg::new(ArgsElephant::ARG_ID).long("id").required(false).takes_value(true))
     }
     
-    fn parse(matches: &ArgMatches) -> Result<Self, std::process::ExitCode> {
+    fn parse(matches: &ArgMatches) -> Result<Self> {
         Ok(Self {
             number: matches.value_of_t::<i32>(ArgsElephant::ARG_ID).unwrap_or(0),
         })

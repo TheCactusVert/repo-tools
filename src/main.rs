@@ -10,14 +10,12 @@ mod clean;
 mod elephant;
 
 use args::Args;
+use anyhow::Result;
 
-fn main() -> Result<(), std::process::ExitCode> {
+fn main() -> Result<()> {
     let args = Args::parse()?;
 
-    logger::init().map_err(|e| {
-        eprintln!("Couldn't load logger: {}.", e.to_string());
-        std::process::ExitCode::FAILURE
-    })?;
+    logger::init()?;
     
     match args {
         Args::Clean(args) => clean::execute(args),
