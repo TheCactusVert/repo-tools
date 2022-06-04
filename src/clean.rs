@@ -9,7 +9,7 @@ use crate::package::Package;
 use globset::{Glob, GlobSetBuilder};
 use tar::EntryType;
 
-pub fn run(args: args::ArgsClean) -> Result<(), std::process::ExitCode> {
+pub fn execute(args: args::ArgsClean) -> Result<(), std::process::ExitCode> {
     // Open database
     let mut a = db::open(&args.working_dir, &args.db_name).map_err(|e| {
         log::error!("Couldn't open database: {}.", e.to_string());

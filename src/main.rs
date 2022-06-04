@@ -7,11 +7,11 @@ mod logger;
 mod package;
 
 mod clean;
+mod elephant;
 
 use args::Args;
 
 fn main() -> Result<(), std::process::ExitCode> {
-
     let args = Args::parse()?;
 
     logger::init().map_err(|e| {
@@ -20,7 +20,8 @@ fn main() -> Result<(), std::process::ExitCode> {
     })?;
     
     match args {
-        Args::Clean(args) => clean::run(args),
+        Args::Clean(args) => clean::execute(args),
+        Args::Elephant(args) => elephant::execute(args),
         Args::None => Ok(()),
     }
 }
