@@ -1,4 +1,3 @@
-
 use std::fs;
 use std::io::prelude::*;
 
@@ -59,13 +58,17 @@ pub fn execute(args: args::ArgsClean) -> Result<()> {
             log::warn!("An entry in the database seems invalid.");
             continue;
         }
-        
+
         log::info!("A package named {} has been found.", pkg.name);
-        
+
         // Filter for package
         match Glob::new(&format!("*{}*", pkg.filename)) {
-            Ok(package_pattern) => { pattern.add(package_pattern); }
-            Err(e) => { log::warn!("Glob: {}.", e.to_string()); }
+            Ok(package_pattern) => {
+                pattern.add(package_pattern);
+            }
+            Err(e) => {
+                log::warn!("Glob: {}.", e.to_string());
+            }
         };
     }
 
@@ -88,6 +91,6 @@ pub fn execute(args: args::ArgsClean) -> Result<()> {
             log::warn!("Couldn't remove a file: {}.", e.to_string());
         }
     }
-    
+
     Ok(())
 }

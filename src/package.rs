@@ -2,6 +2,7 @@
 pub struct Package {
     pub filename: String,
     pub name: String,
+    pub hash: [u8; 32],
 }
 
 impl Package {
@@ -23,6 +24,13 @@ impl Package {
                     }
                     Some("%NAME%") => {
                         pkg.name = line.to_string();
+                    }
+                    Some("%SHA256SUM%") => {
+                        if let Ok(hash) = hex::decode(line.as_bytes())  {
+                            if hash.len() == 32 {
+                                pkg.hash.copy_from_slice(&hash);
+                            }
+                        }
                     }
                     _ => {}
                 }

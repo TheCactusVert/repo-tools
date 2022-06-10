@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Error, Result};
-use clap::{Arg, command, ArgMatches, Command};
+use clap::{command, Arg, ArgMatches, Command};
 
 const ERROR_GENERIC: &'static str = "Required arguments were not provided";
 
@@ -32,10 +32,14 @@ impl Args {
 
     pub fn parse() -> Result<Self> {
         let matches = Self::matches();
-        
+
         match matches.subcommand() {
-            Some((ArgsClean::COMMAND, sub_matches)) => Ok(Args::Clean(ArgsClean::parse(sub_matches)?)),
-            Some((ArgsElephant::COMMAND, sub_matches)) => Ok(Args::Elephant(ArgsElephant::parse(sub_matches)?)),
+            Some((ArgsClean::COMMAND, sub_matches)) => {
+                Ok(Args::Clean(ArgsClean::parse(sub_matches)?))
+            }
+            Some((ArgsElephant::COMMAND, sub_matches)) => {
+                Ok(Args::Elephant(ArgsElephant::parse(sub_matches)?))
+            }
             _ => Ok(Args::None),
         }
     }
@@ -49,13 +53,28 @@ impl ArgsClean {
     fn matches() -> Command<'static> {
         Command::new(ArgsClean::COMMAND)
             .about("Clean a repository from unused packages")
-            .arg(Arg::new(ArgsClean::ARG_DB_NAME).required(true).takes_value(true).help("Database name"))
-            .arg(Arg::new(ArgsClean::ARG_WORK_DIR).long("directory").short('C').required(false).takes_value(true).help("Directory of the database"))
+            .arg(
+                Arg::new(ArgsClean::ARG_DB_NAME)
+                    .required(true)
+                    .takes_value(true)
+                    .help("Database name"),
+            )
+            .arg(
+                Arg::new(ArgsClean::ARG_WORK_DIR)
+                    .long("directory")
+                    .short('C')
+                    .required(false)
+                    .takes_value(true)
+                    .help("Directory of the database"),
+            )
     }
 
     fn parse(matches: &ArgMatches) -> Result<Self> {
         Ok(Self {
-            db_name: matches.value_of(ArgsClean::ARG_DB_NAME).ok_or(Error::msg(ERROR_GENERIC))?.to_string(),
+            db_name: matches
+                .value_of(ArgsClean::ARG_DB_NAME)
+                .ok_or(Error::msg(ERROR_GENERIC))? // Impossible but anyway
+                .to_string(),
             working_dir: match matches.value_of(ArgsClean::ARG_WORK_DIR) {
                 Some(dir) => PathBuf::from(dir),
                 None => std::env::current_dir()?,
@@ -69,11 +88,14 @@ impl ArgsElephant {
     const ARG_ID: &'static str = "id";
 
     fn matches() -> Command<'static> {
-        Command::new(ArgsElephant::COMMAND)
-            .about("Toot toot")
-            .arg(Arg::new(ArgsElephant::ARG_ID).long("id").required(false).takes_value(true))
+        Command::new(ArgsElephant::COMMAND).about("Toot toot").arg(
+            Arg::new(ArgsElephant::ARG_ID)
+                .long("id")
+                .required(false)
+                .takes_value(true),
+        )
     }
-    
+
     fn parse(matches: &ArgMatches) -> Result<Self> {
         Ok(Self {
             number: matches.value_of_t::<i32>(ArgsElephant::ARG_ID).unwrap_or(0),
