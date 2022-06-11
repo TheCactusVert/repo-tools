@@ -11,7 +11,7 @@ use tar::EntryType;
 
 pub fn execute(args: args::ArgsClean) -> Result<()> {
     // Open database
-    let mut a = db::open(&args.working_dir, &args.db_name).map_err(|e| {
+    let mut a = db::open(&args.database.working_dir, &args.database.db_name).map_err(|e| {
         log::error!("Couldn't open database: {}.", e.to_string());
         e
     })?;
@@ -26,10 +26,11 @@ pub fn execute(args: args::ArgsClean) -> Result<()> {
     let mut pattern: GlobSetBuilder = GlobSetBuilder::new();
 
     // Filter for database
-    let db_pattern = Glob::new(&format!("*{}.{}*", args.db_name, "{db,files}")).map_err(|e| {
-        log::error!("Glob: {}.", e.to_string());
-        e
-    })?;
+    let db_pattern =
+        Glob::new(&format!("*{}.{}*", args.database.db_name, "{db,files}")).map_err(|e| {
+            log::error!("Glob: {}.", e.to_string());
+            e
+        })?;
     pattern.add(db_pattern);
 
     for file in entries {
@@ -77,7 +78,7 @@ pub fn execute(args: args::ArgsClean) -> Result<()> {
         e
     })?;
 
-    let paths_del = fs::read_dir(args.working_dir)
+    let paths_del = fs::read_dir(args.database.working_dir)
         .map_err(|e| {
             log::error!("Couldn't read working directory: {}.", e.to_string());
             e

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.57"
-clap = { version = "3.1.18", features = ["cargo"] }
+clap = { version = "3.1.18", features = ["cargo", "env"] }
 flate2 = "1.0.24"
 globset = "0.4.8"
 gpgme = "0.10.0"

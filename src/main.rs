@@ -5,26 +5,26 @@ mod args;
 mod db;
 mod logger;
 mod package;
+mod sign;
 
 mod clean;
 mod elephant;
 
-use std::str::FromStr;
-
 use anyhow::Result;
-use args::Args;
+use args::{Args, ArgsSubcommand};
 
 fn main() -> Result<()> {
+    /*sign::sign(std::path::PathBuf::from(
+        "/tmp/toto/x86_64/cactus.db.tar.gz",
+    ))?;*/
+
     let args = Args::parse()?;
 
-    logger::init(
-        log::LevelFilter::from_str(&std::env::var("RUST_LOG").unwrap_or("warn".to_string()))
-            .unwrap_or(log::LevelFilter::Warn),
-    )?; // TODO parse from args or env ?
+    logger::init(args.verbosity)?;
 
-    match args {
-        Args::Clean(args) => clean::execute(args),
-        Args::Elephant(args) => elephant::execute(args),
-        Args::None => Ok(()),
+    match args.subcommand {
+        ArgsSubcommand::Clean(args) => clean::execute(args),
+        ArgsSubcommand::Elephant(args) => elephant::execute(args),
+        ArgsSubcommand::None => Ok(()),
     }
 }

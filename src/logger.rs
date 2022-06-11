@@ -1,14 +1,19 @@
 use std::fmt::Arguments;
 use std::io;
 use std::io::Write;
+use std::str::FromStr;
 
 use log::{Level, LevelFilter, Log, Metadata, Record, SetLoggerError};
 use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
 
-pub fn init(max_level: LevelFilter) -> Result<(), SetLoggerError> {
+pub fn init(max_level: Option<String>) -> Result<(), SetLoggerError> {
     let logger = Logger::default();
 
-    log::set_max_level(max_level);
+    log::set_max_level(match max_level {
+        Some(max_level) => LevelFilter::from_str(&max_level).unwrap_or(LevelFilter::Warn),
+        None => LevelFilter::Warn,
+    });
+
     log::set_boxed_logger(Box::new(logger))?;
     Ok(())
 }

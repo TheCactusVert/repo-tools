@@ -26,7 +26,7 @@ impl Package {
                         pkg.name = line.to_string();
                     }
                     Some("%SHA256SUM%") => {
-                        if let Ok(hash) = hex::decode(line.as_bytes())  {
+                        if let Ok(hash) = hex::decode(line.as_bytes()) {
                             if hash.len() == 32 {
                                 pkg.hash.copy_from_slice(&hash);
                             }
