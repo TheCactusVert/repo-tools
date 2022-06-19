@@ -6,7 +6,7 @@ use anyhow::Result;
 use flate2::bufread::GzDecoder;
 use openssl::base64;
 
-pub fn execute(args: args::ArgsElephant) -> Result<()> {
+pub fn execute(args: args::SubcommandElephant) -> Result<()> {
     let data: &str = match args.number {
         1 => {
             "H4sIAJVWBU4CA21RMQ7DIBDbeYWrDgQJ7rZ+IA/IB05l69alcx5fc0ASVXUk4jOO\

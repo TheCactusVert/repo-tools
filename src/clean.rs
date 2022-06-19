@@ -9,9 +9,9 @@ use anyhow::Result;
 use globset::{Glob, GlobSetBuilder};
 use tar::EntryType;
 
-pub fn execute(args: args::ArgsClean) -> Result<()> {
+pub fn execute(args: args::SubcommandClean) -> Result<()> {
     // Open database
-    let mut a = db::open(&args.database.working_dir, &args.database.db_name).map_err(|e| {
+    let mut a = db::open(&args.database.directory, &args.database.name).map_err(|e| {
         log::error!("Couldn't open database: {}.", e.to_string());
         e
     })?;
@@ -27,7 +27,7 @@ pub fn execute(args: args::ArgsClean) -> Result<()> {
 
     // Filter for database
     let db_pattern =
-        Glob::new(&format!("*{}.{}*", args.database.db_name, "{db,files}")).map_err(|e| {
+        Glob::new(&format!("*{}.{}*", args.database.name, "{db,files}")).map_err(|e| {
             log::error!("Glob: {}.", e.to_string());
             e
         })?;
@@ -78,9 +78,9 @@ pub fn execute(args: args::ArgsClean) -> Result<()> {
         e
     })?;
 
-    let paths_del = fs::read_dir(args.database.working_dir)
+    let paths_del = fs::read_dir(args.database.directory)
         .map_err(|e| {
-            log::error!("Couldn't read working directory: {}.", e.to_string());
+            log::error!("Couldn't read database directory: {}.", e.to_string());
             e
         })?
         .filter_map(|v| v.ok())
