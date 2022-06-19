@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::prelude::*;
 
-use crate::args;
+use crate::cli;
 use crate::db;
 use crate::package::Package;
 
@@ -9,7 +9,7 @@ use anyhow::Result;
 use globset::{Glob, GlobSetBuilder};
 use tar::EntryType;
 
-pub fn execute(args: args::SubcommandClean) -> Result<()> {
+pub fn exec(args: cli::SubcommandClean) -> Result<()> {
     // Open database
     let mut a = db::open(&args.database.directory, &args.database.name).map_err(|e| {
         log::error!("Couldn't open database: {}.", e.to_string());

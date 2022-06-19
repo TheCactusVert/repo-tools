@@ -1,17 +1,16 @@
 extern crate log;
 extern crate tar;
 
-mod args;
+mod cli;
 mod db;
 mod logger;
 mod package;
-mod sign;
+mod util;
 
-mod clean;
-mod elephant;
+mod commands;
 
 use anyhow::Result;
-use args::{AppArgs, AppSubcommand};
+use cli::{AppArgs, AppSubcommand};
 
 fn main() -> Result<()> {
     /*sign::sign(std::path::PathBuf::from(
@@ -23,8 +22,8 @@ fn main() -> Result<()> {
     logger::init(args.verbosity)?;
 
     match args.subcommand {
-        AppSubcommand::Clean(args) => clean::execute(args),
-        AppSubcommand::Elephant(args) => elephant::execute(args),
+        AppSubcommand::Clean(args) => commands::clean::exec(args),
+        AppSubcommand::Elephant(args) => commands::elephant::exec(args),
         AppSubcommand::None => Ok(()),
     }
 }

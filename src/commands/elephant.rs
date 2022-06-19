@@ -1,12 +1,12 @@
 use std::io::Read;
 
-use crate::args;
+use crate::cli;
 
 use anyhow::Result;
 use flate2::bufread::GzDecoder;
 use openssl::base64;
 
-pub fn execute(args: args::SubcommandElephant) -> Result<()> {
+pub fn exec(args: cli::SubcommandElephant) -> Result<()> {
     let data: &str = match args.number {
         1 => {
             "H4sIAJVWBU4CA21RMQ7DIBDbeYWrDgQJ7rZ+IA/IB05l69alcx5fc0ASVXUk4jOO\
